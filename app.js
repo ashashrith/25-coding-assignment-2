@@ -113,12 +113,20 @@ app.get(
 
 app.get("/user/following/", authenticationToken, async (request, response) => {
   const getFollowerQuery = `SELECT name FROM user INNER JOIN follower ON
-    user.user_id = follower.follower_id WHERE `;
+    user.user_id = follower.follower_user__id WHERE
+    follower.follower_user_id = ${user.user_id};`;
+
+  const dbFollower = await db.all(getFollowerQuery);
+  response.send(dbFollower);
 });
 
 app.get("/user/followers/", authenticationToken, async (request, response) => {
   const getFollowsQuery = `SELECT name FROM user INNER JOIN follower ON
-    user.user_id = follower.follower_id WHERE`;
+    user.user_id = follower.following_user_id WHERE
+    follower.following_user_id = ${user.user_id};`;
+
+  const dbFollowsResponse = await db.all(getFollowsQuery);
+  response.send(dbFollowsResponse);
 });
 
 app.get("/tweets/:tweetId/", authenticationToken, async (request, response) => {
