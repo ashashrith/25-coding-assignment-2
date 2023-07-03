@@ -132,7 +132,71 @@ app.get("/user/followers/", authenticationToken, async (request, response) => {
 
 app.get("/tweets/:tweetId/", authenticationToken, async (request, response) => {
   const { tweetId } = request.params;
-  const getTweetQuery = `SELECT `;
+  const getTweetQuery = `SELECT tweet, SUM(like_id) As likes, SUM(reply) AS replies, date_time AS dateTime FROM
+  tweet INNER JOIN reply ON tweet.tweet_id = reply.tweet_id INNER JOIN like tweet.tweet_id = 
+  like.tweet_id WHERE tweet.tweet_id = ${tweetId};`;
+
+  const dbTweetResponse = await db.all(getTweetQuery);
+  response.send(dbTweetResponse);
 });
+
+app.get(
+  "/tweets/:tweetId/likes/",
+  authenticationToken,
+  async (request, response) => {
+    const { tweetId } = request.params;
+    const getUserNameQuery = `SELECT name as likes FROM user INNER JOIN like ON user.user_id = like.user_id 
+     WHERE tweet.tweet_id = ${tweetId};`;
+
+    const dbUserNameResponse = await JSON.stringify(db.all(getUserNameQuery));
+    response.send(dbUserNameResponse);
+  }
+);
+
+app.get(
+  "/tweets/:tweetId/replies/",
+  authenticationToken,
+  async (request, response) => {
+    const { tweetId } = request.params;
+    const getTweetRepliesQuery = `SELECT name, reply FROM user INNER JOIN reply ON 
+    user.user_id = reply.user_id WHERE reply.tweet_id = ${tweetId};`;
+
+    const dbTweetReplyResponse = await db.all(getTweetRepliesQuery);
+    response.send(dbTweetReplyResponse);
+  }
+);
+
+app.get("/user/tweets/", authenticationToken, async (request, response) => {
+  const getUserTweetsQuery = `SELECT tweet, SUM(like_id) as likes, SUM(reply_id) as replies,
+    date_time as dateTime FROM tweet INNER JOIN like ON tweet.tweet_id = like.tweet_id INNER JOIN
+    reply ON tweet.tweet_id = reply.tweet_id FILTER BY tweet_id ORDER_BY ASC tweet_id`;
+
+  const dbUserResponse = await db.all(getTweetRepliesQuery);
+  response.send(dbUserResponse);
+});
+
+app.post("/user/tweets/", authenticationToken, async (request, response) => {
+  const { tweet } = request.body;
+  const postTweetQuery = `
+    INSERT INTO tweet (tweet)
+    VALUES
+    (${tweet});`;
+  await database.run(postTweetQuery);
+  response.send("Created a Tweet");
+});
+
+app.delete(
+  "/tweets/:tweetId/",
+  authenticationToken,
+  async (request, response) => {
+    const { tweetId } = request.params;
+    const deleteTweetQuery = `
+    DELETE FROM tweet
+    WHERE tweet_id = ${tweetId}`;
+
+    await database.run(deleteTweetQuery);
+    response.send("Tweet Removed");
+  }
+);
 
 module.exports = app;
