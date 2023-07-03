@@ -93,6 +93,7 @@ const authenticationToken = (request, response, next) => {
         response.send("Invalid JWT Token");
       } else {
         request.username = payload.username;
+        const { username } = request;
         next();
       }
     });
