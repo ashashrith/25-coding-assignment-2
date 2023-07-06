@@ -104,9 +104,13 @@ app.get(
   "/user/tweets/feed/",
   authenticationToken,
   async (request, response) => {
-    const getUserTweetsQuery = `SELECT username, tweet, date_time as dateTime
-      FROM user INNER JOIN tweet ON user.user_id = tweet.user_id ORDER_BY 
-      date_time ASC LIMIT 4;`;
+    const getUserTweetsQuery = `SELECT
+      user.username, tweet.tweet, tweet.date_time AS dateTime
+      FROM
+      follower INNER JOIN tweet ON follower.following_user_id = tweet.user_id
+      INNER JOIN user ON tweet.user_id = user.user_id 
+      WHERE follower.follower_user_id = ${follower.following_user_id}
+      ORDER BY tweet.date_time DESC LIMIT 4;`;
     const dbResponse = await db.all(getUserTweetsQuery);
     response.send(dbResponse);
   }
@@ -114,8 +118,8 @@ app.get(
 
 app.get("/user/following/", authenticationToken, async (request, response) => {
   const getFollowerQuery = `SELECT name FROM user INNER JOIN follower ON
-    user.user_id = follower.follower_user__id WHERE
-    follower.follower_user_id = ${user.user_id};`;
+    user.user_id = follower.follower_user_id WHERE
+    follower.follower_user_id = ${follower.follower_user_id};`;
 
   const dbFollower = await db.all(getFollowerQuery);
   response.send(dbFollower);
@@ -124,7 +128,7 @@ app.get("/user/following/", authenticationToken, async (request, response) => {
 app.get("/user/followers/", authenticationToken, async (request, response) => {
   const getFollowsQuery = `SELECT name FROM user INNER JOIN follower ON
     user.user_id = follower.following_user_id WHERE
-    follower.following_user_id = ${user.user_id};`;
+    follower.following_user_id = ${follower.following_user_id};`;
 
   const dbFollowsResponse = await db.all(getFollowsQuery);
   response.send(dbFollowsResponse);
@@ -132,8 +136,8 @@ app.get("/user/followers/", authenticationToken, async (request, response) => {
 
 app.get("/tweets/:tweetId/", authenticationToken, async (request, response) => {
   const { tweetId } = request.params;
-  const getTweetQuery = `SELECT tweet, SUM(like_id) As likes, SUM(reply) AS replies, date_time AS dateTime FROM
-  tweet INNER JOIN reply ON tweet.tweet_id = reply.tweet_id INNER JOIN like tweet.tweet_id = 
+  const getTweetQuery = `SELECT tweet.tweet_id, SUM(like.like_id) As likes, SUM(reply.reply) AS replies, reply.date_time AS dateTime FROM
+  tweet INNER JOIN reply ON tweet.tweet_id = reply.tweet_id INNER JOIN like ON tweet.tweet_id = 
   like.tweet_id WHERE tweet.tweet_id = ${tweetId};`;
 
   const dbTweetResponse = await db.all(getTweetQuery);
@@ -167,9 +171,9 @@ app.get(
 );
 
 app.get("/user/tweets/", authenticationToken, async (request, response) => {
-  const getUserTweetsQuery = `SELECT tweet, SUM(like_id) as likes, SUM(reply_id) as replies,
-    date_time as dateTime FROM tweet INNER JOIN like ON tweet.tweet_id = like.tweet_id INNER JOIN
-    reply ON tweet.tweet_id = reply.tweet_id FILTER BY tweet_id ORDER_BY ASC tweet_id`;
+  const getUserTweetsQuery = `SELECT tweet, SUM(like.like_id) as likes, SUM(reply.reply_id) as replies,
+    tweet.date_time as dateTime FROM tweet INNER JOIN like ON tweet.tweet_id = like.tweet_id INNER JOIN
+    reply ON tweet.tweet_id = reply.tweet_id FILTER BY tweet.tweet_id ORDER_BY ASC tweet.tweet_id`;
 
   const dbUserResponse = await db.all(getTweetRepliesQuery);
   response.send(dbUserResponse);
